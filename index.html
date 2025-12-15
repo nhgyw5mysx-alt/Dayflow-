@@ -80,11 +80,13 @@
       transform: translateX(100%);
       transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease;
       overflow-y: auto;
+      pointer-events: none;
     }
     .section.active {
       opacity: 1;
       visibility: visible;
       transform: translateX(0);
+      pointer-events: auto;
     }
     .section.prev {
       transform: translateX(-100%);
@@ -232,28 +234,19 @@
     </section>
   </div>
 
-  <script src="https://unpkg.com/idb@7/build/umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
   <script>
     const { jsPDF } = window.jspdf;
 
-    const dbPromise = idb.openDB('DayFlowDB', 4, {
-      upgrade(db) {
-        db.createObjectStore('data', { keyPath: 'id' });
-      }
-    });
-
-    async function saveData(id, value) {
-      const db = await dbPromise;
-      await db.put('data', { id, value });
+    function saveData(id, value) {
+      localStorage.setItem(id, JSON.stringify(value));
     }
 
-    async function loadData(id, defaultValue = '') {
-      const db = await dbPromise;
-      const item = await db.get('data', id);
-      return item ? item.value : defaultValue;
+    function loadData(id, defaultValue) {
+      const stored = localStorage.getItem(id);
+      return stored ? JSON.parse(stored) : defaultValue;
     }
 
     // Notes
@@ -266,8 +259,8 @@
     const clearCompletedBtn = document.getElementById('clear-completed');
     const clearAllTasksBtn = document.getElementById('clear-all-tasks');
 
-    async function loadTasks() {
-      const tasks = await loadData('tasks', []);
+    function loadTasks() {
+      const tasks = loadData('tasks', []);
       renderTasks(tasks);
     }
 
@@ -289,26 +282,26 @@
       });
     }
 
-    taskInput.addEventListener('keypress', async (e) => {
+    taskInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && taskInput.value.trim()) {
-        const tasks = await loadData('tasks', []);
+        const tasks = loadData('tasks', []);
         tasks.push({ text: taskInput.value.trim(), done: false });
-        await saveData('tasks', tasks);
+        saveData('tasks', tasks);
         taskInput.value = '';
         renderTasks(tasks);
       }
     });
 
-    clearCompletedBtn.addEventListener('click', async () => {
-      let tasks = await loadData('tasks', []);
+    clearCompletedBtn.addEventListener('click', () => {
+      let tasks = loadData('tasks', []);
       tasks = tasks.filter(t => !t.done);
-      await saveData('tasks', tasks);
+      saveData('tasks', tasks);
       renderTasks(tasks);
     });
 
-    clearAllTasksBtn.addEventListener('click', async () => {
+    clearAllTasksBtn.addEventListener('click', () => {
       if (confirm('Clear all tasks?')) {
-        await saveData('tasks', []);
+        saveData('tasks', []);
         renderTasks([]);
       }
     });
@@ -323,8 +316,8 @@
     const clearAllJobsBtn = document.getElementById('clear-all-jobs');
     const exportPdfBtn = document.getElementById('export-pdf-btn');
 
-    async function loadJobs() {
-      const jobs = await loadData('jobs', []);
+    function loadJobs() {
+      const jobs = loadData('jobs', []);
       jobs.sort((a, b) => b.timestamp - a.timestamp);
       renderJobs(jobs);
       return jobs;
@@ -350,12 +343,12 @@
       });
     }
 
-    addJobBtn.addEventListener('click', async () => {
+    addJobBtn.addEventListener('click', () => {
       const name = jobName.value.trim();
       const hours = parseFloat(jobHours.value);
       const rate = parseFloat(jobRate.value) || 0;
       if (name && !isNaN(hours) && hours >= 0) {
-        const jobs = await loadData('jobs', []);
+        const jobs = loadData('jobs', []);
         jobs.push({
           timestamp: Date.now(),
           job: name,
@@ -363,26 +356,26 @@
           rate: rate,
           notes: jobNotes.value.trim()
         });
-        await saveData('jobs', jobs);
+        saveData('jobs', jobs);
         jobName.value = '';
         jobHours.value = '';
         jobRate.value = '';
         jobNotes.value = '';
-        await loadJobs();
+        loadJobs();
       } else {
         alert('Please enter a job name and valid hours.');
       }
     });
 
-    clearAllJobsBtn.addEventListener('click', async () => {
+    clearAllJobsBtn.addEventListener('click', () => {
       if (confirm('Delete all job entries? This cannot be undone.')) {
-        await saveData('jobs', []);
+        saveData('jobs', []);
         renderJobs([]);
       }
     });
 
-    exportPdfBtn.addEventListener('click', async () => {
-      const jobs = await loadJobs();
+    exportPdfBtn.addEventListener('click', () => {
+      const jobs = loadJobs();
       if (jobs.length === 0) {
         alert('No jobs to export!');
         return;
@@ -464,11 +457,9 @@
     });
 
     // Load data
-    (async () => {
-      notesText.value = await loadData('notes', '');
-      await loadTasks();
-      await loadJobs();
-    })();
+    notesText.value = loadData('notes', '');
+    loadTasks();
+    loadJobs();
   </script>
 </body>
 </html>
