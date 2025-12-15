@@ -229,7 +229,10 @@
 
   <script src="https://unpkg.com/idb@7/build/umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script>
+    const { jsPDF } = window.jspdf;
+
     const dbPromise = idb.openDB('DayFlowDB', 1, {
       upgrade(db) {
         db.createObjectStore('data', { keyPath: 'id' });
@@ -368,54 +371,55 @@
         return;
       }
 
-      const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      
-      // Colors
+
+      // Header with color
       doc.setFillColor('#ceac90');
-      doc.rect(0, 0, 210, 50, 'F');
+      doc.rect(0, 0, 210, 40, 'F');
       doc.setTextColor('#ffffff');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(24);
+      doc.setFontSize(22);
       doc.text('DayFlow Timesheet', 105, 25, { align: 'center' });
 
       doc.setTextColor('#000000');
       doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Exported: ${new Date().toLocaleDateString()}`, 105, 40, { align: 'center' });
+      doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 105, 35, { align: 'center' });
 
-      let y = 60;
-      let totalHours = 0;
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      jobs.forEach(job => {
-        const date = new Date(job.timestamp).toLocaleDateString();
-        doc.text(`${job.job}`, 15, y);
-        doc.text(`${job.hours} hrs`, 150, y);
-        doc.text(date, 180, y, { align: 'right' });
-        totalHours += job.hours;
-        y += 10;
-
-        if (job.notes) {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(11);
-          const splitNotes = doc.splitTextToSize(job.notes, 180);
-          doc.text(splitNotes, 15, y);
-          y += splitNotes.length * 6 + 5;
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(14);
-        }
-        y += 5;
+      // Prepare table data
+      const tableData = jobs.map(job => {
+        const date = new Date(job.timestamp).toLocaleString();
+        return [job.job, `${job.hours} hrs`, date, job.notes || ''];
       });
 
-      doc.setFontSize(16);
-      doc.text(`Total Hours: ${totalHours.toFixed(2)}`, 105, y + 10, { align: 'center' });
+      let totalHours = jobs.reduce((sum, job) => sum + job.hours, 0);
+
+      // AutoTable
+      doc.autoTable({
+        head: [['Job', 'Hours', 'Date & Time', 'Notes']],
+        body: tableData,
+        startY: 50,
+        theme: 'grid',
+        headStyles: { fillColor: '#ceac90', textColor: '#ffffff', fontStyle: 'bold' },
+        styles: { fontSize: 11, cellPadding: 5 },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 25, halign: 'center' },
+          2: { cellWidth: 45 },
+          3: { cellWidth: 60 } // Notes wrap automatically
+        },
+        didDrawPage: (data) => {
+          // Add total at the bottom of the last page
+          if (data.pageNumber === doc.internal.getNumberOfPages()) {
+            doc.setFontSize(14);
+            doc.setFontStyle('bold');
+            doc.text(`Total Hours: ${totalHours.toFixed(2)}`, 105, data.settings.startY + data.table.height + 10, { align: 'center' });
+          }
+        }
+      });
 
       doc.save('DayFlow_Timesheet.pdf');
     });
 
-    // Smooth & reliable navigation
+    // Smooth navigation
     const tabs = document.querySelectorAll('.tab');
     const sections = document.querySelectorAll('.section');
     let currentSection = document.querySelector('.section.active');
@@ -427,17 +431,14 @@
 
         if (targetSection === currentSection) return;
 
-        // Update tabs
         document.querySelector('.tab.active').classList.remove('active');
         tab.classList.add('active');
 
-        // Animate out current
         currentSection.classList.remove('active');
         if (Array.from(sections).indexOf(targetSection) > Array.from(sections).indexOf(currentSection)) {
           currentSection.classList.add('prev');
         }
 
-        // Animate in target
         targetSection.classList.add('active');
         targetSection.classList.remove('prev');
 
