@@ -4,26 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DayFlow</title>
-  <meta name="theme-color" content="#c7bba0" />
+  <meta name="theme-color" content="#ffffff" />
   <link rel="manifest" href="data:application/manifest+json,{
     &quot;name&quot;:&quot;DayFlow&quot;,
     &quot;short_name&quot;:&quot;DayFlow&quot;,
     &quot;start_url&quot;:&quot;.&quot;,
     &quot;display&quot;:&quot;standalone&quot;,
-    &quot;background_color&quot;:&quot;#c7bba0&quot;,
-    &quot;theme_color&quot;:&quot;#ceac90&quot;,
+    &quot;background_color&quot;:&quot;#ffffff&quot;,
+    &quot;theme_color&quot;:&quot;#000000&quot;,
     &quot;icons&quot;:[
-      {&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ceac90' rx='20'/%3E%3Ctext x='50' y='60' font-size='50' text-anchor='middle' fill='white'%3E✦%3C/text%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}
+      {&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000000' rx='20'/%3E%3Ctext x='50' y='60' font-size='50' text-anchor='middle' fill='white'%3E✦%3C/text%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}
     ]
   }" />
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      --primary: #ceac90;
-      --secondary: #c7bba0;
+      --primary: #000000;
+      --secondary: #ffffff;
       --text: #000000;
-      --light: #f5f0eb;
+      --light: #f8f8f8;
+      --border: #dddddd;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
@@ -39,24 +40,29 @@
       text-align: center;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
+    h1 {
+      color: white;
+      font-size: 1.8rem;
+      font-weight: normal;
+    }
     .tabs {
       display: flex;
       justify-content: center;
-      gap: 15px;
-      margin-top: 10px;
+      gap: 20px;
+      margin-top: 15px;
       flex-wrap: wrap;
     }
     .tab {
       font-size: 1.1rem;
-      padding: 10px 14px;
+      padding: 10px 20px;
       cursor: pointer;
       border-radius: 20px;
       transition: all 0.3s ease;
+      border: 1px solid white;
     }
     .tab.active {
       background: white;
-      color: var(--primary);
-      font-weight: bold;
+      color: black;
     }
     .container {
       position: relative;
@@ -69,7 +75,6 @@
       inset: 0;
       padding: 20px;
       background: var(--light);
-      border-radius: 20px 20px 0 0;
       opacity: 0;
       visibility: hidden;
       transform: translateX(100%);
@@ -84,15 +89,19 @@
     .section.prev {
       transform: translateX(-100%);
     }
-    h2 { margin-bottom: 20px; color: var(--primary); text-align: center; }
+    h2 {
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-align: center;
+      font-weight: normal;
+    }
 
-    /* Shared button style */
     .clear-btn, #add-job-btn, #export-pdf-btn {
       background: var(--primary);
       color: white;
       border: none;
       padding: 10px 16px;
-      border-radius: 15px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 1rem;
       margin: 10px 5px;
@@ -103,37 +112,34 @@
       width: 100%;
       height: 90%;
       padding: 15px;
-      border: none;
+      border: 1px solid var(--border);
       background: white;
-      border-radius: 15px;
+      border-radius: 8px;
       font-size: 1.1rem;
       resize: none;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
     }
 
     /* Schedule */
     #task-input {
       width: 100%;
       padding: 15px;
-      border: none;
-      border-radius: 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       font-size: 1.1rem;
       margin-bottom: 15px;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
     }
     .task-item {
       display: flex;
       align-items: center;
       background: white;
       padding: 15px;
-      border-radius: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       margin-bottom: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
     .task-item.done {
       opacity: 0.6;
       text-decoration: line-through;
-      background: #f0e6dc;
     }
     .task-item input[type="checkbox"] {
       width: 24px;
@@ -150,29 +156,27 @@
     .job-form {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 20px;
     }
-    .job-input, .hours-input, .job-notes {
+    .job-input, .hours-input, .rate-input, .job-notes {
       width: 100%;
       padding: 15px;
-      border: none;
-      border-radius: 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       font-size: 1.1rem;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+      background: white;
     }
-    .hours-input { width: 100%; }
     .job-item {
       background: white;
       padding: 15px;
-      border-radius: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       margin-bottom: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
     .job-header {
       display: flex;
       justify-content: space-between;
-      font-weight: bold;
       margin-bottom: 5px;
     }
     .job-timestamp {
@@ -187,7 +191,7 @@
 </head>
 <body>
   <header>
-    <h1 style="color:white; font-size:1.8rem;">DayFlow</h1>
+    <h1>DayFlow</h1>
     <div class="tabs">
       <div class="tab active" data-section="notes">Notes</div>
       <div class="tab" data-section="schedule">Schedule</div>
@@ -216,6 +220,7 @@
       <div class="job-form">
         <input type="text" id="job-name" class="job-input" placeholder="Job name..." />
         <input type="number" id="job-hours" class="hours-input" placeholder="Hours (e.g. 2.5)" min="0" step="0.1" />
+        <input type="number" id="job-rate" class="rate-input" placeholder="Hourly rate ($)" min="0" step="0.01" />
         <textarea id="job-notes" class="job-notes" placeholder="Additional notes..."></textarea>
         <button id="add-job-btn">Add Job</button>
       </div>
@@ -227,7 +232,6 @@
     </section>
   </div>
 
-  <!-- Libraries -->
   <script src="https://unpkg.com/idb@7/build/umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -235,7 +239,7 @@
   <script>
     const { jsPDF } = window.jspdf;
 
-    const dbPromise = idb.openDB('DayFlowDB', 1, {
+    const dbPromise = idb.openDB('DayFlowDB', 3, {
       upgrade(db) {
         db.createObjectStore('data', { keyPath: 'id' });
       }
@@ -265,7 +269,6 @@
     async function loadTasks() {
       const tasks = await loadData('tasks', []);
       renderTasks(tasks);
-      return tasks;
     }
 
     function renderTasks(tasks) {
@@ -313,6 +316,7 @@
     // Jobs
     const jobName = document.getElementById('job-name');
     const jobHours = document.getElementById('job-hours');
+    const jobRate = document.getElementById('job-rate');
     const jobNotes = document.getElementById('job-notes');
     const addJobBtn = document.getElementById('add-job-btn');
     const jobList = document.getElementById('job-list');
@@ -329,14 +333,16 @@
     function renderJobs(jobs) {
       jobList.innerHTML = '';
       jobs.forEach(job => {
+        const amount = (job.hours * job.rate).toFixed(2);
+        const date = new Date(job.timestamp).toLocaleString();
         const li = document.createElement('li');
         li.className = 'job-item';
-        const date = new Date(job.timestamp).toLocaleString();
         li.innerHTML = `
           <div class="job-header">
             <span>${job.job}</span>
-            <span>${job.hours} hours</span>
+            <span>$${amount}</span>
           </div>
+          <div>${job.hours} hrs @ $${job.rate}/hr</div>
           <div class="job-timestamp">${date}</div>
           <div class="job-details">${job.notes || '<em>No notes</em>'}</div>
         `;
@@ -345,17 +351,24 @@
     }
 
     addJobBtn.addEventListener('click', async () => {
-      if (jobName.value.trim() && jobHours.value >= 0) {
+      const name = jobName.value.trim();
+      const hours = parseFloat(jobHours.value);
+      const rate = parseFloat(jobRate.value) || 0;
+      if (name && !isNaN(hours) && hours >= 0) {
         const jobs = await loadData('jobs', []);
         jobs.push({
           timestamp: Date.now(),
-          job: jobName.value.trim(),
-          hours: parseFloat(jobHours.value),
+          job: name,
+          hours: hours,
+          rate: rate,
           notes: jobNotes.value.trim()
         });
         await saveData('jobs', jobs);
-        jobName.value = ''; jobHours.value = ''; jobNotes.value = '';
-        loadJobs();
+        jobName.value = '';
+        jobHours.value = '';
+        jobRate.value = '';
+        jobNotes.value = '';
+        await loadJobs();
       }
     });
 
@@ -374,49 +387,49 @@
       }
 
       const doc = new jsPDF();
-
-      // Header
-      doc.setFillColor('#ceac90');
+      doc.setFillColor('#000000');
       doc.rect(0, 0, 210, 40, 'F');
       doc.setTextColor('#ffffff');
-      doc.setFontSize(22);
+      doc.setFontSize(20);
       doc.text('DayFlow Timesheet', 105, 25, { align: 'center' });
-
       doc.setTextColor('#000000');
       doc.setFontSize(12);
-      doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 105, 35, { align: 'center' });
+      doc.text(`Exported: ${new Date().toLocaleDateString()}`, 105, 35, { align: 'center' });
 
-      // Table data
-      const tableData = jobs.map(job => [
-        job.job,
-        `${job.hours} hrs`,
-        new Date(job.timestamp).toLocaleString(),
-        job.notes || ''
-      ]);
+      const tableData = jobs.map(job => {
+        const amount = (job.hours * job.rate).toFixed(2);
+        return [
+          job.job,
+          job.hours.toFixed(2),
+          `$${job.rate.toFixed(2)}`,
+          `$${amount}`,
+          new Date(job.timestamp).toLocaleString(),
+          job.notes || ''
+        ];
+      });
 
-      const totalHours = jobs.reduce((sum, job) => sum + job.hours, 0);
+      const totalAmount = jobs.reduce((sum, j) => sum + (j.hours * j.rate), 0);
 
-      // Use autoTable on the doc instance
       doc.autoTable({
-        head: [['Job', 'Hours', 'Date & Time', 'Notes']],
+        head: [['Job', 'Hours', 'Rate', 'Amount', 'Date & Time', 'Notes']],
         body: tableData,
         startY: 50,
         theme: 'grid',
-        headStyles: { fillColor: '#ceac90', textColor: '#ffffff', fontStyle: 'bold' },
-        styles: { fontSize: 10, cellPadding: 4 },
+        headStyles: { fillColor: '#000000', textColor: '#ffffff' },
+        styles: { fontSize: 10, cellPadding: 5 },
         columnStyles: {
-          0: { cellWidth: 45 },
-          1: { cellWidth: 25, halign: 'center' },
-          2: { cellWidth: 50 },
-          3: { cellWidth: 60 }
+          0: { cellWidth: 40 },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 25, halign: 'right' },
+          3: { cellWidth: 25, halign: 'right' },
+          4: { cellWidth: 45 },
+          5: { cellWidth: 45 }
         }
       });
 
-      // Total hours at bottom
       const finalY = doc.lastAutoTable.finalY || 50;
       doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Total Hours: ${totalHours.toFixed(2)}`, 105, finalY + 15, { align: 'center' });
+      doc.text(`Total Amount: $${totalAmount.toFixed(2)}`, 105, finalY + 15, { align: 'center' });
 
       doc.save('DayFlow_Timesheet.pdf');
     });
@@ -424,7 +437,7 @@
     // Navigation
     const tabs = document.querySelectorAll('.tab');
     const sections = document.querySelectorAll('.section');
-    let currentSection = document.querySelector('.section.active');
+    let currentSection = document.getElementById('notes');
 
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -437,7 +450,7 @@
         tab.classList.add('active');
 
         currentSection.classList.remove('active');
-        if (Array.from(sections).indexOf(targetSection) > Array.from(sections).indexOf(currentSection)) {
+        if ([...sections].indexOf(targetSection) > [...sections].indexOf(currentSection)) {
           currentSection.classList.add('prev');
         }
 
@@ -448,9 +461,9 @@
       });
     });
 
-    // Load data on start
+    // Load data
     (async () => {
-      notesText.value = await loadData('notes');
+      notesText.value = await loadData('notes', '');
       await loadTasks();
       await loadJobs();
     })();
