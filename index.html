@@ -227,9 +227,11 @@
     </section>
   </div>
 
+  <!-- Libraries -->
   <script src="https://unpkg.com/idb@7/build/umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
   <script>
     const { jsPDF } = window.jspdf;
 
@@ -373,7 +375,7 @@
 
       const doc = new jsPDF();
 
-      // Header with color
+      // Header
       doc.setFillColor('#ceac90');
       doc.rect(0, 0, 210, 40, 'F');
       doc.setTextColor('#ffffff');
@@ -384,42 +386,42 @@
       doc.setFontSize(12);
       doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 105, 35, { align: 'center' });
 
-      // Prepare table data
-      const tableData = jobs.map(job => {
-        const date = new Date(job.timestamp).toLocaleString();
-        return [job.job, `${job.hours} hrs`, date, job.notes || ''];
-      });
+      // Table data
+      const tableData = jobs.map(job => [
+        job.job,
+        `${job.hours} hrs`,
+        new Date(job.timestamp).toLocaleString(),
+        job.notes || ''
+      ]);
 
-      let totalHours = jobs.reduce((sum, job) => sum + job.hours, 0);
+      const totalHours = jobs.reduce((sum, job) => sum + job.hours, 0);
 
-      // AutoTable
+      // Use autoTable on the doc instance
       doc.autoTable({
         head: [['Job', 'Hours', 'Date & Time', 'Notes']],
         body: tableData,
         startY: 50,
         theme: 'grid',
         headStyles: { fillColor: '#ceac90', textColor: '#ffffff', fontStyle: 'bold' },
-        styles: { fontSize: 11, cellPadding: 5 },
+        styles: { fontSize: 10, cellPadding: 4 },
         columnStyles: {
-          0: { cellWidth: 50 },
+          0: { cellWidth: 45 },
           1: { cellWidth: 25, halign: 'center' },
-          2: { cellWidth: 45 },
-          3: { cellWidth: 60 } // Notes wrap automatically
-        },
-        didDrawPage: (data) => {
-          // Add total at the bottom of the last page
-          if (data.pageNumber === doc.internal.getNumberOfPages()) {
-            doc.setFontSize(14);
-            doc.setFontStyle('bold');
-            doc.text(`Total Hours: ${totalHours.toFixed(2)}`, 105, data.settings.startY + data.table.height + 10, { align: 'center' });
-          }
+          2: { cellWidth: 50 },
+          3: { cellWidth: 60 }
         }
       });
+
+      // Total hours at bottom
+      const finalY = doc.lastAutoTable.finalY || 50;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Total Hours: ${totalHours.toFixed(2)}`, 105, finalY + 15, { align: 'center' });
 
       doc.save('DayFlow_Timesheet.pdf');
     });
 
-    // Smooth navigation
+    // Navigation
     const tabs = document.querySelectorAll('.tab');
     const sections = document.querySelectorAll('.section');
     let currentSection = document.querySelector('.section.active');
@@ -446,7 +448,7 @@
       });
     });
 
-    // Load data
+    // Load data on start
     (async () => {
       notesText.value = await loadData('notes');
       await loadTasks();
