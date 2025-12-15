@@ -16,17 +16,18 @@
       {&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ceac90' rx='20'/%3E%3Ctext x='50' y='60' font-size='50' text-anchor='middle' fill='white'%3E✦%3C/text%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}
     ]
   }" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --primary: #ceac90;
       --secondary: #c7bba0;
-      --text: #3a2f24;
+      --text: #000000; /* Black wording */
       --light: #f5f0eb;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Montserrat', sans-serif;
       background: var(--secondary);
       color: var(--text);
       height: 100vh;
@@ -42,12 +43,12 @@
     .tabs {
       display: flex;
       justify-content: center;
-      gap: 40px;
+      gap: 20px; /* Adjusted for three tabs */
       margin-top: 10px;
     }
     .tab {
-      font-size: 1.4rem;
-      padding: 10px 20px;
+      font-size: 1.2rem; /* Slightly smaller for fit */
+      padding: 10px 15px;
       cursor: pointer;
       border-radius: 20px;
       transition: all 0.3s ease;
@@ -74,6 +75,7 @@
       transform: translateX(100%) rotate(5deg);
       transition: transform 0.7s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.6s ease;
       pointer-events: none;
+      overflow-y: auto;
     }
     .section.active {
       opacity: 1;
@@ -138,6 +140,70 @@
       flex: 1;
       font-size: 1.1rem;
     }
+
+    /* Jobs Section */
+    .job-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .job-input, .hours-input, .job-notes {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 15px;
+      font-size: 1.1rem;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .hours-input {
+      width: 100px;
+    }
+    #add-job-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    #job-list {
+      list-style: none;
+    }
+    .job-item {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .job-timestamp {
+      font-size: 0.9rem;
+      color: gray;
+    }
+    .job-details {
+      margin-top: 10px;
+    }
+    #export-pdf-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      margin-top: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
   </style>
 </head>
 <body>
@@ -146,6 +212,7 @@
     <div class="tabs">
       <div class="tab active" data-section="notes">Notes</div>
       <div class="tab" data-section="schedule">Schedule</div>
+      <div class="tab" data-section="jobs">Jobs</div>
     </div>
   </header>
 
@@ -160,10 +227,24 @@
       <input type="text" id="task-input" placeholder="Add a new task..." />
       <ul id="task-list"></ul>
     </section>
+
+    <section id="jobs" class="section">
+      <h2>Job Time Log</h2>
+      <div class="job-form">
+        <input type="text" class="job-input" id="job-name" placeholder="Job name..." />
+        <input type="number" class="hours-input" id="job-hours" placeholder="Hours" min="0" step="0.1" />
+        <textarea class="job-notes" id="job-notes" placeholder="Additional notes..."></textarea>
+        <button id="add-job-btn">Add Job</button>
+      </div>
+      <ul id="job-list"></ul>
+      <button id="export-pdf-btn">Export to PDF</button>
+    </section>
   </div>
 
   <!-- idb for local storage -->
   <script src="https://unpkg.com/idb@7/build/umd.js"></script>
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     const dbPromise = idb.openDB('DayFlowDB', 1, {
       upgrade(db) {
@@ -225,12 +306,88 @@
       }
     });
 
+    // Jobs section
+    const jobName = document.getElementById('job-name');
+    const jobHours = document.getElementById('job-hours');
+    const jobNotes = document.getElementById('job-notes');
+    const addJobBtn = document.getElementById('add-job-btn');
+    const jobList = document.getElementById('job-list');
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+
+    async function loadJobs() {
+      const jobs = await loadData('jobs', []);
+      // Sort by timestamp descending (newest first)
+      jobs.sort((a, b) => b.timestamp - a.timestamp);
+      renderJobs(jobs);
+      return jobs;
+    }
+
+    function renderJobs(jobs) {
+      jobList.innerHTML = '';
+      jobs.forEach(job => {
+        const li = document.createElement('li');
+        li.className = 'job-item';
+        const date = new Date(job.timestamp).toLocaleString();
+        li.innerHTML = `
+          <div class="job-header">
+            <span>${job.job}</span>
+            <span>${job.hours} hours</span>
+          </div>
+          <div class="job-timestamp">${date}</div>
+          <div class="job-details">${job.notes}</div>
+        `;
+        jobList.appendChild(li);
+      });
+    }
+
+    addJobBtn.addEventListener('click', async () => {
+      if (jobName.value.trim() && jobHours.value) {
+        const jobs = await loadData('jobs', []);
+        jobs.push({
+          timestamp: Date.now(),
+          job: jobName.value.trim(),
+          hours: parseFloat(jobHours.value),
+          notes: jobNotes.value.trim()
+        });
+        saveData('jobs', jobs);
+        jobName.value = '';
+        jobHours.value = '';
+        jobNotes.value = '';
+        const sortedJobs = await loadJobs();
+      }
+    });
+
+    exportPdfBtn.addEventListener('click', async () => {
+      const jobs = await loadJobs();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 10;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Job Time Log', 10, y);
+      y += 10;
+      jobs.forEach(job => {
+        const date = new Date(job.timestamp).toLocaleString();
+        doc.text(`${job.job} - ${job.hours} hours - ${date}`, 10, y);
+        y += 7;
+        if (job.notes) {
+          doc.setFont('helvetica', 'normal');
+          doc.text(job.notes, 10, y);
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+        }
+        y += 3;
+      });
+      doc.save('job_log.pdf');
+    });
+
     // Navigation with semi-circle pan
     const tabs = document.querySelectorAll('.tab');
     const sections = document.querySelectorAll('.section');
     let currentSection = 'notes';
+    let currentIndex = 0;
+    const sectionOrder = ['notes', 'schedule', 'jobs'];
 
-    tabs.forEach(tab => {
+    tabs.forEach((tab, index) => {
       tab.addEventListener('click', () => {
         const target = tab.dataset.section;
         if (target === currentSection) return;
@@ -238,19 +395,21 @@
         tabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
 
+        const targetIndex = sectionOrder.indexOf(target);
+        const fromLeft = targetIndex < currentIndex;
+
         sections.forEach(s => {
           s.classList.remove('active', 'from-left');
           if (s.id === target) {
-            // Determine direction for arc effect
-            if (target === 'schedule') {
-              s.classList.add('active');
-            } else {
-              s.classList.add('active', 'from-left');
+            s.classList.add('active');
+            if (fromLeft) {
+              s.classList.add('from-left');
             }
           }
         });
 
         currentSection = target;
+        currentIndex = targetIndex;
       });
     });
 
@@ -258,6 +417,7 @@
     (async () => {
       notesText.value = await loadData('notes');
       await loadTasks();
+      await loadJobs();
     })();
 
     // Service Worker for offline PWA
