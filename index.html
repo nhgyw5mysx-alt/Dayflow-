@@ -22,7 +22,7 @@
     :root {
       --primary: #ceac90;
       --secondary: #c7bba0;
-      --text: #000000; /* Black wording */
+      --text: #000000;
       --light: #f5f0eb;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -37,18 +37,18 @@
       background: var(--primary);
       padding: 20px;
       text-align: center;
-      position: relative;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     .tabs {
       display: flex;
       justify-content: center;
-      gap: 20px; /* Adjusted for three tabs */
+      gap: 15px;
       margin-top: 10px;
+      flex-wrap: wrap;
     }
     .tab {
-      font-size: 1.2rem; /* Slightly smaller for fit */
-      padding: 10px 15px;
+      font-size: 1.1rem;
+      padding: 10px 14px;
       cursor: pointer;
       border-radius: 20px;
       transition: all 0.3s ease;
@@ -66,29 +66,39 @@
     }
     .section {
       position: absolute;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       padding: 20px;
       background: var(--light);
       border-radius: 20px 20px 0 0;
       opacity: 0;
-      transform: translateX(100%) rotate(5deg);
-      transition: transform 0.7s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.6s ease;
-      pointer-events: none;
+      visibility: hidden;
+      transform: translateX(100%);
+      transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease;
       overflow-y: auto;
     }
     .section.active {
       opacity: 1;
-      transform: translateX(0) rotate(0);
-      pointer-events: all;
+      visibility: visible;
+      transform: translateX(0);
     }
-    /* Semi-circle pan from left */
-    .section.from-left {
-      transform: translateX(-100%) rotate(-5deg);
+    .section.prev {
+      transform: translateX(-100%);
     }
     h2 { margin-bottom: 20px; color: var(--primary); text-align: center; }
 
-    /* Notes Section */
+    /* Shared button style */
+    .clear-btn, #add-job-btn, #export-pdf-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin: 10px 5px;
+    }
+
+    /* Notes */
     #notes-text {
       width: 100%;
       height: 90%;
@@ -101,7 +111,7 @@
       box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
     }
 
-    /* Schedule Section */
+    /* Schedule */
     #task-input {
       width: 100%;
       padding: 15px;
@@ -111,9 +121,6 @@
       margin-bottom: 15px;
       box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
     }
-    #task-list {
-      list-style: none;
-    }
     .task-item {
       display: flex;
       align-items: center;
@@ -122,7 +129,6 @@
       border-radius: 12px;
       margin-bottom: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      transition: all 0.3s ease;
     }
     .task-item.done {
       opacity: 0.6;
@@ -134,14 +140,13 @@
       height: 24px;
       margin-right: 15px;
       accent-color: var(--primary);
-      cursor: pointer;
     }
-    .task-text {
-      flex: 1;
-      font-size: 1.1rem;
+    .schedule-controls {
+      text-align: center;
+      margin-bottom: 20px;
     }
 
-    /* Jobs Section */
+    /* Jobs */
     .job-form {
       display: flex;
       flex-direction: column;
@@ -156,21 +161,7 @@
       font-size: 1.1rem;
       box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
     }
-    .hours-input {
-      width: 100px;
-    }
-    #add-job-btn {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 15px;
-      cursor: pointer;
-      font-size: 1.1rem;
-    }
-    #job-list {
-      list-style: none;
-    }
+    .hours-input { width: 100%; }
     .job-item {
       background: white;
       padding: 15px;
@@ -186,23 +177,11 @@
     }
     .job-timestamp {
       font-size: 0.9rem;
-      color: gray;
+      color: #555;
     }
-    .job-details {
-      margin-top: 10px;
-    }
-    #export-pdf-btn {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 15px;
-      cursor: pointer;
-      font-size: 1.1rem;
-      margin-top: 20px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
+    .jobs-controls {
+      text-align: center;
+      margin: 20px 0;
     }
   </style>
 </head>
@@ -219,31 +198,36 @@
   <div class="container">
     <section id="notes" class="section active">
       <h2>Today's Notes & Reminders</h2>
-      <textarea id="notes-text" placeholder="Jot down anything... reminders, ideas, thoughts..."></textarea>
+      <textarea id="notes-text" placeholder="Jot down anything..."></textarea>
     </section>
 
     <section id="schedule" class="section">
       <h2>Today's Tasks</h2>
       <input type="text" id="task-input" placeholder="Add a new task..." />
+      <div class="schedule-controls">
+        <button class="clear-btn" id="clear-completed">Clear Completed</button>
+        <button class="clear-btn" id="clear-all-tasks">Clear All</button>
+      </div>
       <ul id="task-list"></ul>
     </section>
 
     <section id="jobs" class="section">
       <h2>Job Time Log</h2>
       <div class="job-form">
-        <input type="text" class="job-input" id="job-name" placeholder="Job name..." />
-        <input type="number" class="hours-input" id="job-hours" placeholder="Hours" min="0" step="0.1" />
-        <textarea class="job-notes" id="job-notes" placeholder="Additional notes..."></textarea>
+        <input type="text" id="job-name" class="job-input" placeholder="Job name..." />
+        <input type="number" id="job-hours" class="hours-input" placeholder="Hours (e.g. 2.5)" min="0" step="0.1" />
+        <textarea id="job-notes" class="job-notes" placeholder="Additional notes..."></textarea>
         <button id="add-job-btn">Add Job</button>
       </div>
+      <div class="jobs-controls">
+        <button class="clear-btn" id="clear-all-jobs">Clear All Jobs</button>
+        <button id="export-pdf-btn">Export Timesheet PDF</button>
+      </div>
       <ul id="job-list"></ul>
-      <button id="export-pdf-btn">Export to PDF</button>
     </section>
   </div>
 
-  <!-- idb for local storage -->
   <script src="https://unpkg.com/idb@7/build/umd.js"></script>
-  <!-- jsPDF for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     const dbPromise = idb.openDB('DayFlowDB', 1, {
@@ -265,17 +249,18 @@
 
     // Notes
     const notesText = document.getElementById('notes-text');
-    notesText.addEventListener('input', () => {
-      saveData('notes', notesText.value);
-    });
+    notesText.addEventListener('input', () => saveData('notes', notesText.value));
 
-    // Schedule tasks
+    // Schedule
     const taskInput = document.getElementById('task-input');
     const taskList = document.getElementById('task-list');
+    const clearCompletedBtn = document.getElementById('clear-completed');
+    const clearAllTasksBtn = document.getElementById('clear-all-tasks');
 
     async function loadTasks() {
       const tasks = await loadData('tasks', []);
       renderTasks(tasks);
+      return tasks;
     }
 
     function renderTasks(tasks) {
@@ -300,23 +285,37 @@
       if (e.key === 'Enter' && taskInput.value.trim()) {
         const tasks = await loadData('tasks', []);
         tasks.push({ text: taskInput.value.trim(), done: false });
-        saveData('tasks', tasks);
+        await saveData('tasks', tasks);
         taskInput.value = '';
         renderTasks(tasks);
       }
     });
 
-    // Jobs section
+    clearCompletedBtn.addEventListener('click', async () => {
+      let tasks = await loadData('tasks', []);
+      tasks = tasks.filter(t => !t.done);
+      await saveData('tasks', tasks);
+      renderTasks(tasks);
+    });
+
+    clearAllTasksBtn.addEventListener('click', async () => {
+      if (confirm('Clear all tasks?')) {
+        await saveData('tasks', []);
+        renderTasks([]);
+      }
+    });
+
+    // Jobs
     const jobName = document.getElementById('job-name');
     const jobHours = document.getElementById('job-hours');
     const jobNotes = document.getElementById('job-notes');
     const addJobBtn = document.getElementById('add-job-btn');
     const jobList = document.getElementById('job-list');
+    const clearAllJobsBtn = document.getElementById('clear-all-jobs');
     const exportPdfBtn = document.getElementById('export-pdf-btn');
 
     async function loadJobs() {
       const jobs = await loadData('jobs', []);
-      // Sort by timestamp descending (newest first)
       jobs.sort((a, b) => b.timestamp - a.timestamp);
       renderJobs(jobs);
       return jobs;
@@ -334,14 +333,14 @@
             <span>${job.hours} hours</span>
           </div>
           <div class="job-timestamp">${date}</div>
-          <div class="job-details">${job.notes}</div>
+          <div class="job-details">${job.notes || '<em>No notes</em>'}</div>
         `;
         jobList.appendChild(li);
       });
     }
 
     addJobBtn.addEventListener('click', async () => {
-      if (jobName.value.trim() && jobHours.value) {
+      if (jobName.value.trim() && jobHours.value >= 0) {
         const jobs = await loadData('jobs', []);
         jobs.push({
           timestamp: Date.now(),
@@ -349,81 +348,109 @@
           hours: parseFloat(jobHours.value),
           notes: jobNotes.value.trim()
         });
-        saveData('jobs', jobs);
-        jobName.value = '';
-        jobHours.value = '';
-        jobNotes.value = '';
-        const sortedJobs = await loadJobs();
+        await saveData('jobs', jobs);
+        jobName.value = ''; jobHours.value = ''; jobNotes.value = '';
+        loadJobs();
+      }
+    });
+
+    clearAllJobsBtn.addEventListener('click', async () => {
+      if (confirm('Delete all job entries? This cannot be undone.')) {
+        await saveData('jobs', []);
+        renderJobs([]);
       }
     });
 
     exportPdfBtn.addEventListener('click', async () => {
       const jobs = await loadJobs();
+      if (jobs.length === 0) {
+        alert('No jobs to export!');
+        return;
+      }
+
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      let y = 10;
+      
+      // Colors
+      doc.setFillColor('#ceac90');
+      doc.rect(0, 0, 210, 50, 'F');
+      doc.setTextColor('#ffffff');
       doc.setFont('helvetica', 'bold');
-      doc.text('Job Time Log', 10, y);
-      y += 10;
+      doc.setFontSize(24);
+      doc.text('DayFlow Timesheet', 105, 25, { align: 'center' });
+
+      doc.setTextColor('#000000');
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Exported: ${new Date().toLocaleDateString()}`, 105, 40, { align: 'center' });
+
+      let y = 60;
+      let totalHours = 0;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
       jobs.forEach(job => {
-        const date = new Date(job.timestamp).toLocaleString();
-        doc.text(`${job.job} - ${job.hours} hours - ${date}`, 10, y);
-        y += 7;
+        const date = new Date(job.timestamp).toLocaleDateString();
+        doc.text(`${job.job}`, 15, y);
+        doc.text(`${job.hours} hrs`, 150, y);
+        doc.text(date, 180, y, { align: 'right' });
+        totalHours += job.hours;
+        y += 10;
+
         if (job.notes) {
           doc.setFont('helvetica', 'normal');
-          doc.text(job.notes, 10, y);
-          y += 7;
+          doc.setFontSize(11);
+          const splitNotes = doc.splitTextToSize(job.notes, 180);
+          doc.text(splitNotes, 15, y);
+          y += splitNotes.length * 6 + 5;
           doc.setFont('helvetica', 'bold');
+          doc.setFontSize(14);
         }
-        y += 3;
+        y += 5;
       });
-      doc.save('job_log.pdf');
+
+      doc.setFontSize(16);
+      doc.text(`Total Hours: ${totalHours.toFixed(2)}`, 105, y + 10, { align: 'center' });
+
+      doc.save('DayFlow_Timesheet.pdf');
     });
 
-    // Navigation with semi-circle pan
+    // Smooth & reliable navigation
     const tabs = document.querySelectorAll('.tab');
     const sections = document.querySelectorAll('.section');
-    let currentSection = 'notes';
-    let currentIndex = 0;
-    const sectionOrder = ['notes', 'schedule', 'jobs'];
+    let currentSection = document.querySelector('.section.active');
 
-    tabs.forEach((tab, index) => {
+    tabs.forEach(tab => {
       tab.addEventListener('click', () => {
-        const target = tab.dataset.section;
-        if (target === currentSection) return;
+        const targetId = tab.dataset.section;
+        const targetSection = document.getElementById(targetId);
 
-        tabs.forEach(t => t.classList.remove('active'));
+        if (targetSection === currentSection) return;
+
+        // Update tabs
+        document.querySelector('.tab.active').classList.remove('active');
         tab.classList.add('active');
 
-        const targetIndex = sectionOrder.indexOf(target);
-        const fromLeft = targetIndex < currentIndex;
+        // Animate out current
+        currentSection.classList.remove('active');
+        if (Array.from(sections).indexOf(targetSection) > Array.from(sections).indexOf(currentSection)) {
+          currentSection.classList.add('prev');
+        }
 
-        sections.forEach(s => {
-          s.classList.remove('active', 'from-left');
-          if (s.id === target) {
-            s.classList.add('active');
-            if (fromLeft) {
-              s.classList.add('from-left');
-            }
-          }
-        });
+        // Animate in target
+        targetSection.classList.add('active');
+        targetSection.classList.remove('prev');
 
-        currentSection = target;
-        currentIndex = targetIndex;
+        currentSection = targetSection;
       });
     });
 
-    // Load data on start
+    // Load data
     (async () => {
       notesText.value = await loadData('notes');
       await loadTasks();
       await loadJobs();
     })();
-
-    // Service Worker for offline PWA
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('data:application/javascript,importScripts("https://unpkg.com/idb@7/build/umd.js");self.addEventListener("fetch",e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))))');
-    }
   </script>
 </body>
 </html>
