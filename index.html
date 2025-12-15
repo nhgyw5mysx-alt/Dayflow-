@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DayFlow</title>
+  <meta name="theme-color" content="#c7bba0" />
+  <link rel="manifest" href="data:application/manifest+json,{
+    &quot;name&quot;:&quot;DayFlow&quot;,
+    &quot;short_name&quot;:&quot;DayFlow&quot;,
+    &quot;start_url&quot;:&quot;.&quot;,
+    &quot;display&quot;:&quot;standalone&quot;,
+    &quot;background_color&quot;:&quot;#c7bba0&quot;,
+    &quot;theme_color&quot;:&quot;#ceac90&quot;,
+    &quot;icons&quot;:[
+      {&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ceac90' rx='20'/%3E%3Ctext x='50' y='60' font-size='50' text-anchor='middle' fill='white'%3E✦%3C/text%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}
+    ]
+  }" />
+
+  <style>
+    :root {
+      --primary: #ceac90;
+      --secondary: #c7bba0;
+      --text: #3a2f24;
+      --light: #f5f0eb;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--secondary);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background: var(--primary);
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 10px;
+    }
+    .tab {
+      font-size: 1.4rem;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 20px;
+      transition: all 0.3s ease;
+    }
+    .tab.active {
+      background: white;
+      color: var(--primary);
+      font-weight: bold;
+    }
+    .container {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 120px);
+      overflow: hidden;
+    }
+    .section {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      background: var(--light);
+      border-radius: 20px 20px 0 0;
+      opacity: 0;
+      transform: translateX(100%) rotate(5deg);
+      transition: transform 0.7s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.6s ease;
+      pointer-events: none;
+    }
+    .section.active {
+      opacity: 1;
+      transform: translateX(0) rotate(0);
+      pointer-events: all;
+    }
+    /* Semi-circle pan from left */
+    .section.from-left {
+      transform: translateX(-100%) rotate(-5deg);
+    }
+    h2 { margin-bottom: 20px; color: var(--primary); text-align: center; }
+
+    /* Notes Section */
+    #notes-text {
+      width: 100%;
+      height: 90%;
+      padding: 15px;
+      border: none;
+      background: white;
+      border-radius: 15px;
+      font-size: 1.1rem;
+      resize: none;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* Schedule Section */
+    #task-input {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 15px;
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+    }
+    #task-list {
+      list-style: none;
+    }
+    .task-item {
+      display: flex;
+      align-items: center;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+    }
+    .task-item.done {
+      opacity: 0.6;
+      text-decoration: line-through;
+      background: #f0e6dc;
+    }
+    .task-item input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      margin-right: 15px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+    .task-text {
+      flex: 1;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 style="color:white; font-size:1.8rem;">DayFlow</h1>
+    <div class="tabs">
+      <div class="tab active" data-section="notes">Notes</div>
+      <div class="tab" data-section="schedule">Schedule</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <section id="notes" class="section active">
+      <h2>Today's Notes & Reminders</h2>
+      <textarea id="notes-text" placeholder="Jot down anything... reminders, ideas, thoughts..."></textarea>
+    </section>
+
+    <section id="schedule" class="section">
+      <h2>Today's Tasks</h2>
+      <input type="text" id="task-input" placeholder="Add a new task..." />
+      <ul id="task-list"></ul>
+    </section>
+  </div>
+
+  <!-- idb for local storage -->
+  <script src="https://unpkg.com/idb@7/build/umd.js"></script>
+  <script>
+    const dbPromise = idb.openDB('DayFlowDB', 1, {
+      upgrade(db) {
+        db.createObjectStore('data', { keyPath: 'id' });
+      }
+    });
+
+    async function saveData(id, value) {
+      const db = await dbPromise;
+      await db.put('data', { id, value });
+    }
+
+    async function loadData(id, defaultValue = '') {
+      const db = await dbPromise;
+      const item = await db.get('data', id);
+      return item ? item.value : defaultValue;
+    }
+
+    // Notes
+    const notesText = document.getElementById('notes-text');
+    notesText.addEventListener('input', () => {
+      saveData('notes', notesText.value);
+    });
+
+    // Schedule tasks
+    const taskInput = document.getElementById('task-input');
+    const taskList = document.getElementById('task-list');
+
+    async function loadTasks() {
+      const tasks = await loadData('tasks', []);
+      renderTasks(tasks);
+    }
+
+    function renderTasks(tasks) {
+      taskList.innerHTML = '';
+      tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        li.className = 'task-item' + (task.done ? ' done' : '');
+        li.innerHTML = `
+          <input type="checkbox" ${task.done ? 'checked' : ''}>
+          <span class="task-text">${task.text}</span>
+        `;
+        li.querySelector('input').addEventListener('change', () => {
+          tasks[index].done = !tasks[index].done;
+          saveData('tasks', tasks);
+          renderTasks(tasks);
+        });
+        taskList.appendChild(li);
+      });
+    }
+
+    taskInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter' && taskInput.value.trim()) {
+        const tasks = await loadData('tasks', []);
+        tasks.push({ text: taskInput.value.trim(), done: false });
+        saveData('tasks', tasks);
+        taskInput.value = '';
+        renderTasks(tasks);
+      }
+    });
+
+    // Navigation with semi-circle pan
+    const tabs = document.querySelectorAll('.tab');
+    const sections = document.querySelectorAll('.section');
+    let currentSection = 'notes';
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.section;
+        if (target === currentSection) return;
+
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        sections.forEach(s => {
+          s.classList.remove('active', 'from-left');
+          if (s.id === target) {
+            // Determine direction for arc effect
+            if (target === 'schedule') {
+              s.classList.add('active');
+            } else {
+              s.classList.add('active', 'from-left');
+            }
+          }
+        });
+
+        currentSection = target;
+      });
+    });
+
+    // Load data on start
+    (async () => {
+      notesText.value = await loadData('notes');
+      await loadTasks();
+    })();
+
+    // Service Worker for offline PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('data:application/javascript,importScripts("https://unpkg.com/idb@7/build/umd.js");self.addEventListener("fetch",e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))))');
+    }
+  </script>
+</body>
+</html>
