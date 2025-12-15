@@ -59,6 +59,7 @@
       border-radius: 20px;
       transition: all 0.3s ease;
       border: 1px solid white;
+      color: white;
     }
     .tab.active {
       background: white;
@@ -98,7 +99,7 @@
       font-weight: normal;
     }
 
-    .clear-btn, #add-job-btn, #export-pdf-btn {
+    .clear-btn, #add-task-btn, #export-pdf-btn {
       background: var(--primary);
       color: white;
       border: none;
@@ -154,7 +155,7 @@
       margin-bottom: 20px;
     }
 
-    /* Jobs */
+    /* Time Log */
     .job-form {
       display: flex;
       flex-direction: column;
@@ -197,7 +198,7 @@
     <div class="tabs">
       <div class="tab active" data-section="notes">Notes</div>
       <div class="tab" data-section="schedule">Schedule</div>
-      <div class="tab" data-section="jobs">Jobs</div>
+      <div class="tab" data-section="jobs">Time Log</div>
     </div>
   </header>
 
@@ -218,16 +219,16 @@
     </section>
 
     <section id="jobs" class="section">
-      <h2>Job Time Log</h2>
+      <h2>Task Time Log</h2>
       <div class="job-form">
-        <input type="text" id="job-name" class="job-input" placeholder="Job name..." />
+        <input type="text" id="job-name" class="job-input" placeholder="Task..." />
         <input type="number" id="job-hours" class="hours-input" placeholder="Hours (e.g. 2.5)" min="0" step="0.1" />
         <input type="number" id="job-rate" class="rate-input" placeholder="Hourly rate ($)" min="0" step="0.01" />
         <textarea id="job-notes" class="job-notes" placeholder="Additional notes..."></textarea>
-        <button id="add-job-btn">Add Job</button>
+        <button id="add-task-btn">Add Task</button>
       </div>
       <div class="jobs-controls">
-        <button class="clear-btn" id="clear-all-jobs">Clear All Jobs</button>
+        <button class="clear-btn" id="clear-all-tasks-log">Clear All Tasks</button>
         <button id="export-pdf-btn">Export Timesheet PDF</button>
       </div>
       <ul id="job-list"></ul>
@@ -306,78 +307,78 @@
       }
     });
 
-    // Jobs
-    const jobName = document.getElementById('job-name');
-    const jobHours = document.getElementById('job-hours');
-    const jobRate = document.getElementById('job-rate');
-    const jobNotes = document.getElementById('job-notes');
-    const addJobBtn = document.getElementById('add-job-btn');
-    const jobList = document.getElementById('job-list');
-    const clearAllJobsBtn = document.getElementById('clear-all-jobs');
+    // Time Log (Jobs)
+    const taskNameInput = document.getElementById('job-name');
+    const taskHoursInput = document.getElementById('job-hours');
+    const taskRateInput = document.getElementById('job-rate');
+    const taskNotesInput = document.getElementById('job-notes');
+    const addTaskBtn = document.getElementById('add-task-btn');
+    const taskListEl = document.getElementById('job-list');
+    const clearAllTasksLogBtn = document.getElementById('clear-all-tasks-log');
     const exportPdfBtn = document.getElementById('export-pdf-btn');
 
-    function loadJobs() {
-      const jobs = loadData('jobs', []);
-      jobs.sort((a, b) => b.timestamp - a.timestamp);
-      renderJobs(jobs);
-      return jobs;
+    function loadTimeLog() {
+      const entries = loadData('timelog', []);
+      entries.sort((a, b) => b.timestamp - a.timestamp);
+      renderTimeLog(entries);
+      return entries;
     }
 
-    function renderJobs(jobs) {
-      jobList.innerHTML = '';
-      jobs.forEach(job => {
-        const amount = (job.hours * job.rate).toFixed(2);
-        const date = new Date(job.timestamp).toLocaleString();
+    function renderTimeLog(entries) {
+      taskListEl.innerHTML = '';
+      entries.forEach(entry => {
+        const amount = (entry.hours * entry.rate).toFixed(2);
+        const date = new Date(entry.timestamp).toLocaleString();
         const li = document.createElement('li');
         li.className = 'job-item';
         li.innerHTML = `
           <div class="job-header">
-            <span>${job.job}</span>
+            <span>${entry.task}</span>
             <span>$${amount}</span>
           </div>
-          <div>${job.hours} hrs @ $${job.rate}/hr</div>
+          <div>${entry.hours} hrs @ $${entry.rate}/hr</div>
           <div class="job-timestamp">${date}</div>
-          <div class="job-details">${job.notes || '<em>No notes</em>'}</div>
+          <div class="job-details">${entry.notes || '<em>No notes</em>'}</div>
         `;
-        jobList.appendChild(li);
+        taskListEl.appendChild(li);
       });
     }
 
-    addJobBtn.addEventListener('click', () => {
-      const name = jobName.value.trim();
-      const hours = parseFloat(jobHours.value);
-      const rate = parseFloat(jobRate.value) || 0;
+    addTaskBtn.addEventListener('click', () => {
+      const name = taskNameInput.value.trim();
+      const hours = parseFloat(taskHoursInput.value);
+      const rate = parseFloat(taskRateInput.value) || 0;
       if (name && !isNaN(hours) && hours >= 0) {
-        const jobs = loadData('jobs', []);
-        jobs.push({
+        const entries = loadData('timelog', []);
+        entries.push({
           timestamp: Date.now(),
-          job: name,
+          task: name,
           hours: hours,
           rate: rate,
-          notes: jobNotes.value.trim()
+          notes: taskNotesInput.value.trim()
         });
-        saveData('jobs', jobs);
-        jobName.value = '';
-        jobHours.value = '';
-        jobRate.value = '';
-        jobNotes.value = '';
-        loadJobs();
+        saveData('timelog', entries);
+        taskNameInput.value = '';
+        taskHoursInput.value = '';
+        taskRateInput.value = '';
+        taskNotesInput.value = '';
+        loadTimeLog();
       } else {
-        alert('Please enter a job name and valid hours.');
+        alert('Please enter a task and valid hours.');
       }
     });
 
-    clearAllJobsBtn.addEventListener('click', () => {
-      if (confirm('Delete all job entries? This cannot be undone.')) {
-        saveData('jobs', []);
-        renderJobs([]);
+    clearAllTasksLogBtn.addEventListener('click', () => {
+      if (confirm('Delete all task entries? This cannot be undone.')) {
+        saveData('timelog', []);
+        renderTimeLog([]);
       }
     });
 
     exportPdfBtn.addEventListener('click', () => {
-      const jobs = loadJobs();
-      if (jobs.length === 0) {
-        alert('No jobs to export!');
+      const entries = loadTimeLog();
+      if (entries.length === 0) {
+        alert('No tasks to export!');
         return;
       }
 
@@ -391,22 +392,22 @@
       doc.setFontSize(12);
       doc.text(`Exported: ${new Date().toLocaleDateString()}`, 105, 35, { align: 'center' });
 
-      const tableData = jobs.map(job => {
-        const amount = (job.hours * job.rate).toFixed(2);
+      const tableData = entries.map(entry => {
+        const amount = (entry.hours * entry.rate).toFixed(2);
         return [
-          job.job,
-          job.hours.toFixed(2),
-          `$${job.rate.toFixed(2)}`,
+          entry.task,
+          entry.hours.toFixed(2),
+          `$${entry.rate.toFixed(2)}`,
           `$${amount}`,
-          new Date(job.timestamp).toLocaleString(),
-          job.notes || ''
+          new Date(entry.timestamp).toLocaleString(),
+          entry.notes || ''
         ];
       });
 
-      const totalAmount = jobs.reduce((sum, j) => sum + (j.hours * j.rate), 0);
+      const totalAmount = entries.reduce((sum, e) => sum + (e.hours * e.rate), 0);
 
       doc.autoTable({
-        head: [['Job', 'Hours', 'Rate', 'Amount', 'Date & Time', 'Notes']],
+        head: [['Task', 'Hours', 'Rate', 'Amount', 'Date & Time', 'Notes']],
         body: tableData,
         startY: 50,
         theme: 'grid',
@@ -459,7 +460,7 @@
     // Load data
     notesText.value = loadData('notes', '');
     loadTasks();
-    loadJobs();
+    loadTimeLog();
   </script>
 </body>
 </html>
